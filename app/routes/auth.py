@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import select
-from app.schemas import UserCreate, UserOut
+from app.schemas import UserCreate, UserOut, TokenResponse, LoginRequest
 from app.db.database import SessionDep
 from app.db.models import User
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password, create_access_token, verify_token
 
 
 
@@ -35,5 +35,14 @@ def create_user(payload: UserCreate, session: SessionDep):
 
     return db_user
 
-# @router.post("/login", response_model=)
+@router.post("/login", response_model=TokenResponse)
+def login(payload: LoginRequest, session: SessionDep):
+    """Existing user login"""
+    user = session.exec(select(User).where(User.username == LoginRequest.username)).first()
+
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentails")
     
+    access_token = create_access_token(data={"sub": user.username})
+
+    return {"access_token": access_token, "token_type": "bearer"}
