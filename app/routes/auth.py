@@ -4,11 +4,16 @@ from app.schemas import UserCreate, UserOut, TokenResponse, LoginRequest
 from app.db.database import SessionDep
 from app.db.models import User
 from app.core.security import hash_password, verify_password, create_access_token, verify_token
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+HTTPBearer = HTTPBearer
 
 
+router = APIRouter(prefix="/auth",tags=["auth"])
 
-router = APIRouter(prefix="/users",tags=["expenses"])
+security = HTTPBearer() 
 
+def get_token(authorization: str = Depends(security)) -> str:
+    return authorization.credentials
 
 @router.post("/signup", response_model=UserOut)
 def create_user(payload: UserCreate, session: SessionDep):
@@ -38,7 +43,7 @@ def create_user(payload: UserCreate, session: SessionDep):
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, session: SessionDep):
     """Existing user login"""
-    user = session.exec(select(User).where(User.username == LoginRequest.username)).first()
+    user = session.exec(select(User).where(User.username == payload.username)).first()
 
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentails")
@@ -64,10 +69,3 @@ def get_current_user(session: SessionDep, token: str = Depends(get_token)):
         raise HTTPException(status_code=404, detail="User not found")
     
     return user
-
-def get_token(authorization: str = Depends(HTTPBearer())) -> str:
-    return authorization.credentials
-
-from fastapi.security import HTTPBearer
-
-HTTPBearer = HTTPBearer

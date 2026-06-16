@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "default-fallback-key")
 ALGORITHM = "HS256"
@@ -14,6 +14,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
 
 def hash_password(password: str) -> str:
+    # if len(password.encode()) > 72:
+    #     password = password[:72]
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
