@@ -46,3 +46,28 @@ def login(payload: LoginRequest, session: SessionDep):
     access_token = create_access_token(data={"sub": user.username})
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserOut)
+def get_current_user(session: SessionDep, token: str = Depends(get_token)):
+    """Get current user"""
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Get user
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+def get_token(authorization: str = Depends(HTTPBearer())) -> str:
+    return authorization.credentials
+
+from fastapi.security import HTTPBearer
+
+HTTPBearer = HTTPBearer
