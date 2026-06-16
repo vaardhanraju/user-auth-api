@@ -1,4 +1,4 @@
-from fastapi import BaseModel, Field
+from pydantic import BaseModel, Field
 
 
 class UserCreate(BaseModel):
